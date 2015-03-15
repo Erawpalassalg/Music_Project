@@ -60,7 +60,16 @@ $(function(){
 		$.get('Music.html/user', window.sessionStorage.name).done(function(data){
 			user_music = JSON.parse(data);
 			for(song in user_music){
-				var song_node = $("<div class='user_song'><h3 class='song_title'><span class='ID'>"+ (parseInt(song)+1) + "</span> : " + user_music[song]["title"]+"</h3><div>"+user_music[song]["artist"]+ " dans l'album : "+ user_music[song]["album"]+"</div><div class='deleter'> X </div></div>");
+				var song_node = $("<div class='user_song'><h3 class='song_title'><span class='ID'>" + 
+									(parseInt(song)+1) +
+									 "</span> : " + 
+									 user_music[song]["title"]+
+									 "</h3><div>" +
+									 user_music[song]["artist"]+
+									  " dans l'album : " +
+									   user_music[song]["album"] +
+									   "</div><div class='deleter'> X </div></div>"
+									);
 				$('#user_songs').append(song_node);
 				// Code to delete the song
 				$('.deleter').click(function(){
@@ -78,6 +87,15 @@ $(function(){
 			}
 		});
 	}
+		
+		
+	function get_song_place(){
+		var i = 0;
+		while(user_music[i]){
+			i++;
+		}
+		return i;
+	};
 		
 	DZ.init({
 		appId: '152921',
@@ -114,9 +132,10 @@ $(function(){
 				if(user_music === null || Object.size(user_music) < 3){
 					var s = query_results[$(this).children(('.id')).html()];
 					alert(query_results[$(this).children(('.id')).html()].title);
-					
+					var id = get_song_place();
 					var song_datas = {
 							username : window.sessionStorage.name,
+							id : id,
 							song : {
 								title: s.title,
 								artist : s.artist.name,

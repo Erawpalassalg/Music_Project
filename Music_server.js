@@ -187,8 +187,8 @@ my_http.createServer(function(request, response){
 				//console.log("datas : " + req_data);
 				var obj = JSON.parse(req_data);
 				//console.log(playlist[obj["username"]]);
-				var number = Object.size(playlist[obj["username"]]);
-				playlist[obj["username"]][number] =  obj["song"];
+
+				playlist[obj["username"]][obj["id"]] =  obj["song"];
 				console.log(JSON.stringify(playlist));
 				response.writeHeader(200, {"Content-type": "text/plain"});
 				response.end();
