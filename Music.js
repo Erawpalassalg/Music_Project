@@ -96,22 +96,6 @@ $(function(){
 		}
 		return i;
 	};
-		
-	DZ.init({
-		appId: '152921',
-		channelUrl: 'localhost:8080/JSSDK.html',
-		player: {
-			onload: function () {
-				//configure the player with a set of tracks
-				//autoplay set to false
-				DZ.player.playAlbum(2962681, false);
-				//DZ.player.playPlaylist(484767873);
-				//DZ.player.playTracks(['68973465']);
-			}
-		}
-	});
-	
-	
 	
 	var query_results = null;
 	
@@ -158,7 +142,7 @@ $(function(){
 	});
 });
 
-$(window).unload(function(){
+$(window).on('beforeunload', function(){
 	$.ajax({
 		method : "DELETE",
 		url : "Music.html/playlist",

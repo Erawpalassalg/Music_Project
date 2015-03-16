@@ -9,6 +9,9 @@
 		<script type="text/javascript" src="Music.js"></script>
 	</head>
 	<body>
+		
+		<div id='player'></div>
+		
 		<div id="name_wrapper">
 			<h1>Name</h1>
 			<form>
@@ -37,5 +40,23 @@
 		
 		<div id="dz-root"></div>
 		<script src="http://cdn-files.deezer.com/js/min/dz.js"></script>
+		<script>
+			DZ.init({
+				appId: '152921',
+				channelUrl: 'localhost:8080/JSSDK.html',
+				player: {
+					container: 'player',
+					width : 800,
+					height : 300,
+					onload: function () {
+						//configure the player with a set of tracks
+						//autoplay set to false
+						//DZ.player.playAlbum(2962681, false);
+						//DZ.player.playPlaylist(484767873);
+						//DZ.player.playTracks(['68973465']);
+					}
+				}
+			});
+		</script>
 	</body>
 </html>
