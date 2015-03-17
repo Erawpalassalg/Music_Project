@@ -1,6 +1,8 @@
 $(function(){
 	
-	var user_music = null;
+	var user_music = {};
+	
+	var current = null;
 	
 	Object.size = function(obj) {
 	    var size = 0, key;
@@ -30,15 +32,15 @@ $(function(){
 	
 	// ------------------------------------------------------------------- Get the current playlist || GET /playlist
 	function get_playlist(){
-		console.log("get playlist");
+		//console.log("get playlist");
 		$('#playlist').empty();
 		$.get('/Music.html/playlist', function(data){
-			console.log("playlist : " + data);
+			//console.log("playlist : " + data);
 			var playlist = JSON.parse(data);
 			for(user in playlist){
-				console.log("user : " + user);
+				//console.log("user : " + user);
 				for(song in playlist[user]){
-					console.log(song);
+					//console.log(song);
 					if(!$.isEmptyObject(playlist[user][song])){
 						var song_node = $("<div class='playlist_song'><h3>"+playlist[user][song]["title"]+"</h3><div>"+playlist[user][song]["artist"]+ " dans l'album : "+ playlist[user][song]["album"]+"</div></div>");
 						
@@ -51,8 +53,7 @@ $(function(){
 		});	
 	}
 	
-	setInterval(get_playlist, 60000);
-	
+	setInterval(get_playlist, 30000);
 	
 	// ------------------------------------------------------------------- Get the current songs of the user || GET /user
 	function get_user_music(){
@@ -89,6 +90,35 @@ $(function(){
 	}
 		
 		
+	function get_current_song(){
+		$.get('Music.html/current', function(data){
+			var music = JSON.parse(data);
+			if(music.vote === 0){
+				current = null;
+			} else {
+				current = music;
+			}
+			launch_music(music);
+		});
+	}
+	
+	function launch_music(music){
+		if(music !== null){
+			//var song_time = Math.floor(music.time/60) + ((music.time%60)/100);
+			console.log("timer : " + music.time);
+			DZ.player.playTracks([music.id], 0, music.time);
+			setTimeout(function(){get_current_song();}, (music.duration-music.time)*1000);
+		}
+	};
+		
+	// Ask for a song to play if there is not
+	//get_current_song();
+	setInterval(function(){
+		if(current === null){
+			get_current_song();
+		}
+	}, 10000);
+	
 	function get_song_place(){
 		var i = 0;
 		while(user_music[i]){
@@ -104,27 +134,28 @@ $(function(){
 			$('#search_results').empty();
 			query_results = response.data;
 			for( var r in query_results){
-				var node = $("<div class='song'><span class='id' style='display : none'>" + r + "</span><h3 class='title'>"+ (query_results)[r].title +"</h3><div class='name'> par <strong>"+ (query_results)[r].artist.name + "</strong> dans l'album <strong>" + (query_results)[r].album.title +"</strong></div></div>");
+				var node = $("<div class='song'><span class='id' style='display : none'>" + r + "</span><h3 class='title'>"+ query_results[r].title +"</h3><div class='name'> par <strong>"+ query_results[r].artist.name + "</strong> dans l'album <strong>" + query_results[r].album.title +"</strong></div></div>");
 				$('#search_results').append(node);
-				console.log(query_results[r]);
+				//console.log("result" + JSON.stringify(query_results[r]));
 			}
 			$('.song').click(function(){
-				console.log("user_music " + JSON.stringify(user_music));
-				console.log("user_music size : " + Object.size(user_music));
+				//console.log("user_music " + JSON.stringify(user_music));
+				//console.log("user_music size : " + Object.size(user_music));
 				
 				// The fact that an user can't have more than 3 songs is handled on the client-side. The post request is not even submitted if 3 songs are here.
-				if(user_music === null || Object.size(user_music) < 3){
+				if(Object.size(user_music) < 3){
 					var s = query_results[$(this).children(('.id')).html()];
 					alert(query_results[$(this).children(('.id')).html()].title);
-					var id = get_song_place();
+					var list_id = get_song_place();
 					var song_datas = {
-							username : window.sessionStorage.name,
-							id : id,
-							song : {
-								title: s.title,
-								artist : s.artist.name,
-								album : s.album.title	
-							}
+							id : s.id,
+							list_id : list_id,
+							user : window.sessionStorage.name,
+							title : s.title,
+							artist : s.artist.name,
+							album : s.album.title,	
+							duration : s.duration,
+							vote : 1
 					};
 					
 					song_datas = JSON.stringify(song_datas);

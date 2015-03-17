@@ -6,6 +6,8 @@ filesys = require("fs");
 //mongoose = require('mongoose');
 
 var playlist = {};
+var current = {vote : 0};
+var timer = 0;
 
 function add_user(name){
 	playlist[name]={};
@@ -19,6 +21,54 @@ Object.size = function(obj) {
     return size;
 };
 
+function set_song_timer(){
+	var intervalID = setInterval(function(){
+		if(timer < current.duration-1){
+			console.log("timer : " + timer);
+			timer++;
+		} else {
+			timer = 0;
+			most_wanted_song();
+			clearInterval(intervalID);
+		}
+	}, 1000);
+}
+
+function most_wanted_song(){
+	var song_in = false;
+	var choosen_song = {vote : 0};
+	var from_user = -1;
+	var song_id = -1;
+	
+	for(user in playlist){
+		for(song in playlist[user]){
+			if(!song_in){
+				song_in = !song_in;
+			}
+			if(playlist[user][song].vote > choosen_song.vote){
+				choosen_song = playlist[user][song];
+				from_user = user;
+				song_id = song;
+			}
+		}
+	}
+	if(!song_in){
+		current = {vote : 0};
+	} else {
+		current = choosen_song;
+		set_song_timer();
+		console.log("before " + JSON.stringify(playlist));
+		delete playlist[from_user][song_id];
+		console.log("after " + JSON.stringify(playlist));
+	}
+}
+
+// Make the server ask for the next song every 10 sec, if there is none.
+setInterval(function(){
+	if(current.vote === 0){
+		most_wanted_song();
+	}
+}, 10000);
 
 /*// ------------------------------------------------------------------- Connection to database
 
@@ -144,6 +194,7 @@ my_http.createServer(function(request, response){
 			});
 		//----------------------------------------------------------------------------------------- GET /playlist ( to get the list of songs )
 		} else if(full_path.substr(full_path.length - 9) === '/playlist' && request.method == 'GET'){
+			response.writeHeader(200);
 			response.write(JSON.stringify(playlist));
 			response.end();
 		//----------------------------------------------------------------------------------------- POST /playlist ( to post a new user to the playlist )
@@ -181,21 +232,30 @@ my_http.createServer(function(request, response){
 				response.write(JSON.stringify(playlist[query]));
 			}
 			response.end();
-		//----------------------------------------------------------------------------------------- POST /user ( to add a new song to an user )	
+		//----------------------------------------------------------------------------------------- POST /user ( to add a new song to an user )
 		} else if (full_path.substr(full_path.length - 5) === '/user' && request.method == 'POST'){
 			request.on('end', function(){
 				//console.log("datas : " + req_data);
 				var obj = JSON.parse(req_data);
 				//console.log(playlist[obj["username"]]);
 
-				playlist[obj["username"]][obj["id"]] =  obj["song"];
+				playlist[obj.user][obj.list_id] =  obj;
 				console.log(JSON.stringify(playlist));
 				response.writeHeader(200, {"Content-type": "text/plain"});
 				response.end();
 
 			});
+		//----------------------------------------------------------------------------------------- GET /current (to get the song currently playing)
 		} else if(full_path.substr(full_path.length - 8) === '/current' && request.method == 'GET'){
 			//console.log("get the current song");
+			if(current.vote === 0){
+				response.writeHeader(404);
+			} else {
+				response.writeHeader(200);
+				current['time'] = timer;
+				response.write(JSON.stringify(current));
+			}
+			response.end();
 		}
 
 	}
