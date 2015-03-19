@@ -6,7 +6,7 @@ filesys = require("fs");
 //mongoose = require('mongoose');
 
 var playlist = {};
-var current = {vote : 0};
+var current = {votes : 0};
 var timer = 0;
 
 function add_user(name){
@@ -36,7 +36,7 @@ function set_song_timer(){
 
 function most_wanted_song(){
 	var song_in = false;
-	var choosen_song = {vote : 0};
+	var choosen_song = {votes : 0};
 	var from_user = -1;
 	var song_id = -1;
 	
@@ -45,7 +45,7 @@ function most_wanted_song(){
 			if(!song_in){
 				song_in = !song_in;
 			}
-			if(playlist[user][song].vote > choosen_song.vote){
+			if(playlist[user][song].votes > choosen_song.votes){
 				choosen_song = playlist[user][song];
 				from_user = user;
 				song_id = song;
@@ -53,7 +53,7 @@ function most_wanted_song(){
 		}
 	}
 	if(!song_in){
-		current = {vote : 0};
+		current = {votes : 0};
 	} else {
 		current = choosen_song;
 		set_song_timer();
@@ -65,7 +65,7 @@ function most_wanted_song(){
 
 // Make the server ask for the next song every 10 sec, if there is none.
 setInterval(function(){
-	if(current.vote === 0){
+	if(current.votes === 0){
 		most_wanted_song();
 	}
 }, 10000);
@@ -142,8 +142,6 @@ db.once('open', function(callback){
 });*/
 
 // ------------------------------------------------------------------- Creating responses
-
-
 my_http.createServer(function(request, response){
 	var my_path = url.parse(request.url).pathname;
 	var full_path = path.join(process.cwd(), my_path);
@@ -248,7 +246,7 @@ my_http.createServer(function(request, response){
 		//----------------------------------------------------------------------------------------- GET /current (to get the song currently playing)
 		} else if(full_path.substr(full_path.length - 8) === '/current' && request.method == 'GET'){
 			//console.log("get the current song");
-			if(current.vote === 0){
+			if(current.votes === 0){
 				response.writeHeader(404);
 			} else {
 				response.writeHeader(200);
@@ -256,6 +254,17 @@ my_http.createServer(function(request, response){
 				response.write(JSON.stringify(current));
 			}
 			response.end();
+		//----------------------------------------------------------------------------------------- POST/song (to update the vote of a song)
+		} else if(full_path.substr(full_path.length - 5) === '/song' && request.method == 'POST'){
+			request.on('end', function(){
+				var obj = JSON.parse(req_data);
+				console.log(JSON.stringify(playlist[obj.user][obj.song]));
+				var v = playlist[obj.user][obj.song].votes++;
+				console.log("votes : " + v);
+				response.writeHeader(200);
+				response.write(JSON.stringify({votes : v}));
+				response.end();
+			});
 		}
 
 	}

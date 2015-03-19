@@ -42,12 +42,16 @@ $(function(){
 				for(song in playlist[user]){
 					//console.log(song);
 					if(!$.isEmptyObject(playlist[user][song])){
-						var song_node = $("<div class='playlist_song'><h3>"+playlist[user][song]["title"]+"</h3><div>"+playlist[user][song]["artist"]+ " dans l'album : "+ playlist[user][song]["album"]+"</div></div>");
-						
-					} else {
-						var song_node = $("<div>  No song " + playlist[user][song]+" </div>");
+						var song_node = $("<div class='playlist_song'><h3>"+playlist[user][song]["title"]+"</h3><div>"+playlist[user][song]["artist"]+ " dans l'album : "+ playlist[user][song]["album"]+ "<span class='votes'> Votes : " + playlist[user][song].votes + "</span></div></div>");
 					}
 					$('#playlist').append(song_node);
+					$('.playlist_song').click(function(data){
+						console.log("votes upp !");
+						$.post('Music.html/song', JSON.stringify({user: user, song: song}), function(){
+							var v = JSON.parse(data).votes;
+							$(this).find($('.votes')).html("Votes : " + v);
+						});
+					});
 				}
 			}
 		});	
@@ -93,7 +97,7 @@ $(function(){
 	function get_current_song(){
 		$.get('Music.html/current', function(data){
 			var music = JSON.parse(data);
-			if(music.vote === 0){
+			if(music.votes === 0){
 				current = null;
 			} else {
 				current = music;
@@ -106,6 +110,7 @@ $(function(){
 		if(music !== null){
 			//var song_time = Math.floor(music.time/60) + ((music.time%60)/100);
 			console.log("timer : " + music.time);
+			get_playlist();
 			DZ.player.playTracks([music.id], 0, music.time);
 			setTimeout(function(){get_current_song();}, (music.duration-music.time)*1000);
 		}
@@ -155,7 +160,7 @@ $(function(){
 							artist : s.artist.name,
 							album : s.album.title,	
 							duration : s.duration,
-							vote : 1
+							votes : 1
 					};
 					
 					song_datas = JSON.stringify(song_datas);
