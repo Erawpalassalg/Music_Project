@@ -5,12 +5,13 @@ url = require("url"),
 filesys = require("fs");
 //mongoose = require('mongoose');
 
-var playlist = {};
+var playlist =[];
+var catalog = {};
 var current = {votes : 0};
 var timer = 0;
 
 function add_user(name){
-	playlist[name]={};
+	catalog[name]={};
 };
 
 Object.size = function(obj) {
@@ -34,36 +35,31 @@ function set_song_timer(){
 	}, 1000);
 }
 
-function most_wanted_song(){
-	var song_in = false;
-	var choosen_song = {votes : 0};
-	var from_user = -1;
-	var song_id = -1;
+function sort_songs(callback){
 	
-	for(user in playlist){
-		for(song in playlist[user]){
-			if(!song_in){
-				song_in = !song_in;
-			}
-			if(playlist[user][song].votes > choosen_song.votes){
-				choosen_song = playlist[user][song];
-				from_user = user;
-				song_id = song;
-			}
-		}
-	}
-	if(!song_in){
-		current = {votes : 0};
-	} else {
-		current = choosen_song;
-		set_song_timer();
-		console.log("before " + JSON.stringify(playlist));
-		delete playlist[from_user][song_id];
-		console.log("after " + JSON.stringify(playlist));
-	}
 }
 
-// Make the server ask for the next song every 10 sec, if there is none.
+function most_wanted_song(){
+	playlist.sort(sort_by_votes);
+	setTimeout(function(){
+		current = {votes : 0};
+		if(Object.size(playlist[0]) > 0){
+			current = playlist[0];
+			set_song_timer();
+			console.log("before " + JSON.stringify(playlist));
+			playlist.shift(); // remove first object of array
+			console.log("after " + JSON.stringify(playlist));
+		}
+	}, 500);
+}
+
+function sort_by_votes(a, b){
+	var aVotes = a.votes;
+	var bVotes = b.votes;
+	return(aVotes-bVotes);
+}
+
+// Make the server ask for the next song every 10 sec, if there is none. Ans sort the playlist.
 setInterval(function(){
 	if(current.votes === 0){
 		most_wanted_song();
@@ -165,7 +161,7 @@ my_http.createServer(function(request, response){
 			if(!exists){
 				response.writeHeader(404,{"Content-Type": "text/plain"});
 				response.write("404 Not Found\n");
-				response.end;
+				response.end();
 			} else {
 				filesys.readFile(full_path, "binary", function(err, file){
 					if(err){
@@ -184,29 +180,46 @@ my_http.createServer(function(request, response){
 	} else {
 		
 		// Here are handled the CRUD requests
-		//----------------------------------------------------------------------------------------- DELETE /playlist ( to delete an user from the list of songs )		
-		if (full_path.substr(full_path.length - 9) === '/playlist' && request.method == 'DELETE'){
+		//----------------------------------------------------------------------------------------- DELETE /catalog ( to delete an user from the list of songs )		
+		if (full_path.substr(full_path.length - 8) === '/catalog' && request.method == 'DELETE'){
 			request.on('end', function(){
 				console.log("delete " + req_data);
-				delete playlist[req_data];
+				delete catalog[req_data];
 			});
+		//----------------------------------------------------------------------------------------- POST /catalog ( to post a new user to the catalog )
+		} else if(full_path.substr(full_path.length - 8) === '/catalog' && request.method == 'POST') {
+			// Add the user to the catalog. If the user is already in it, just display an error msg
+			request.on('end',function(){
+				if(!catalog[req_data]){
+					console.log("data : " + req_data);
+					add_user(req_data);
+					console.log(catalog);
+				} else {
+					console.log("User already there : " + req_data);
+				}
+				response.writeHeader(200);
+				response.end();
+			});
+		//----------------------------------------------------------------------------------------- POST /playlist ( to add a song from the user's catalog to the playlist)
+		} else if(full_path.substr(full_path.length - 9) === '/playlist' && request.method == 'POST'){
+			request.on('end', function(){
+				var obj = JSON.parse(req_data);
+				playlist.push(catalog[obj.user][obj.id]);
+			});
+			response.writeHeader(200);
+			response.end();
 		//----------------------------------------------------------------------------------------- GET /playlist ( to get the list of songs )
 		} else if(full_path.substr(full_path.length - 9) === '/playlist' && request.method == 'GET'){
 			response.writeHeader(200);
 			response.write(JSON.stringify(playlist));
 			response.end();
-		//----------------------------------------------------------------------------------------- POST /playlist ( to post a new user to the playlist )
-		} else if(full_path.substr(full_path.length - 9) === '/playlist' && request.method == 'POST') {
-			// Add the user to the playlist. If the user is already in it, just display an error msg
-			request.on('end',function(){
-				if(!playlist[req_data]){
-					console.log("data : " + req_data);
-					add_user(req_data);
-					console.log(playlist);
-				} else {
-					console.log("User already there : " + req_data);
-				}
+		//----------------------------------------------------------------------------------------- PUT /playlist (to update votes on a song)
+		} else if(full_path.substr(full_path.length - 9) === '/playlist' && request.method == 'PUT'){
+			request.on('end', function(){
+				var v = playlist[req_data].votes++;
+				console.log("votes : " + v);
 				response.writeHeader(200);
+				//response.write(JSON.stringify({votes : v}));
 				response.end();
 			});
 		//----------------------------------------------------------------------------------------- DELETE /user (to delete a song from an user)
@@ -214,8 +227,8 @@ my_http.createServer(function(request, response){
 			request.on('end',function(){
 				console.log("delete : " + req_data);
 				var obj = JSON.parse(req_data);
-				delete playlist[obj["user"]][obj["id"]];
-				console.log(JSON.stringify(playlist));
+				delete catalog[obj["user"]][obj["id"]];
+				console.log(JSON.stringify(catalog));
 			});
 			response.writeHeader(200);
 			response.end();
@@ -223,11 +236,11 @@ my_http.createServer(function(request, response){
 		} else if(full_path.substr(full_path.length - 5) === '/user' && request.method == 'GET'){
 			//console.log("query : " + query);
 			response.writeHeader(200);
-			if(Object.size(playlist) === 0 || !playlist[query]){
+			if(Object.size(catalog) === 0 || !catalog[query]){
 				response.write("Pas d'objet");
 				console.log("playlsit is empty");
 			} else {
-				response.write(JSON.stringify(playlist[query]));
+				response.write(JSON.stringify(catalog[query]));
 			}
 			response.end();
 		//----------------------------------------------------------------------------------------- POST /user ( to add a new song to an user )
@@ -235,14 +248,13 @@ my_http.createServer(function(request, response){
 			request.on('end', function(){
 				//console.log("datas : " + req_data);
 				var obj = JSON.parse(req_data);
-				//console.log(playlist[obj["username"]]);
+				//console.log(catalog[obj["username"]]);
 
-				playlist[obj.user][obj.list_id] =  obj;
-				console.log(JSON.stringify(playlist));
-				response.writeHeader(200, {"Content-type": "text/plain"});
-				response.end();
-
+				catalog[obj.user][obj.list_id] =  obj;
+				console.log(JSON.stringify(catalog));
 			});
+			response.writeHeader(200, {"Content-type": "text/plain"});
+			response.end();
 		//----------------------------------------------------------------------------------------- GET /current (to get the song currently playing)
 		} else if(full_path.substr(full_path.length - 8) === '/current' && request.method == 'GET'){
 			//console.log("get the current song");
@@ -254,17 +266,6 @@ my_http.createServer(function(request, response){
 				response.write(JSON.stringify(current));
 			}
 			response.end();
-		//----------------------------------------------------------------------------------------- POST/song (to update the vote of a song)
-		} else if(full_path.substr(full_path.length - 5) === '/song' && request.method == 'POST'){
-			request.on('end', function(){
-				var obj = JSON.parse(req_data);
-				console.log(JSON.stringify(playlist[obj.user][obj.song]));
-				var v = playlist[obj.user][obj.song].votes++;
-				console.log("votes : " + v);
-				response.writeHeader(200);
-				response.write(JSON.stringify({votes : v}));
-				response.end();
-			});
 		}
 
 	}

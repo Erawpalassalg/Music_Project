@@ -13,19 +13,19 @@ $(function(){
 	};
 	
 	
-	// -------------------------------------------------------------------  Add the user name to the playlist || POST /playlist
+	// -------------------------------------------------------------------  Add the user name to the catalog || POST /catalog
 	if(!window.sessionStorage.name){
 		// If nothing in the sessionStorage, show the form to enter a name
 		$("#send_name").click(function(){
 			window.sessionStorage.name = $('#name').val();
-			$.post('/Music.html/playlist', $('#name').val());
+			$.post('/Music.html/catalog', $('#name').val());
 			$('#name_wrapper').remove();
 			get_user_music();
 		});
 	} else {
 		// Else, submit the name from the sessionStorage
 		console.log("Already a name : " + window.sessionStorage.name);
-		$.post('/Music.html/playlist', window.sessionStorage.name);
+		$.post('/Music.html/catalog', window.sessionStorage.name);
 		$('#name_wrapper').remove();
 		get_user_music();
 	}
@@ -37,22 +37,19 @@ $(function(){
 		$.get('/Music.html/playlist', function(data){
 			//console.log("playlist : " + data);
 			var playlist = JSON.parse(data);
-			for(user in playlist){
-				//console.log("user : " + user);
-				for(song in playlist[user]){
-					//console.log(song);
-					if(!$.isEmptyObject(playlist[user][song])){
-						var song_node = $("<div class='playlist_song'><h3>"+playlist[user][song]["title"]+"</h3><div>"+playlist[user][song]["artist"]+ " dans l'album : "+ playlist[user][song]["album"]+ "<span class='votes'> Votes : " + playlist[user][song].votes + "</span></div></div>");
-					}
-					$('#playlist').append(song_node);
-					$('.playlist_song').click(function(data){
-						console.log("votes upp !");
-						$.post('Music.html/song', JSON.stringify({user: user, song: song}), function(){
-							var v = JSON.parse(data).votes;
-							$(this).find($('.votes')).html("Votes : " + v);
-						});
-					});
+			for(song in playlist){
+				if(!$.isEmptyObject(playlist[song])){
+					var song_node = $("<div class='playlist_song'><h3>"+playlist[song]["title"]+"</h3><div>"+playlist[song]["artist"]+ " dans l'album : "+ playlist[song]["album"]+ "<span class='votes'> Votes : " + playlist[song].votes + "</span></div></div>");
 				}
+				$('#playlist').append(song_node);
+				$('.playlist_song').click(function(data){
+		// ------------------------------------------------------------------- Upvote a song || PUT /playlist
+					$.ajax({
+						method : 'PUT',
+						url : 'Music.html/playlist',
+						data : song
+					});
+				});
 			}
 		});	
 	}
@@ -73,13 +70,14 @@ $(function(){
 									 user_music[song]["artist"]+
 									  " dans l'album : " +
 									   user_music[song]["album"] +
-									   "</div><div class='deleter'> X </div></div>"
+									   "</div><button class='delete'> Remove </button> <button class='submit'> Submit </button></div>"
 									);
 				$('#user_songs').append(song_node);
 				// Code to delete the song
-				$('.deleter').click(function(){
+				$('.delete').click(function(){
 					var id = $(this).siblings(".song_title").children(".ID").html() - 1;
 					$.ajax({
+				// ------------------------------------------------------------------- Delete a song of the user || DELETE /user
 						method : 'DELETE',
 						url : '/Music.html/user',
 						data : JSON.stringify({user : window.sessionStorage.name, id : id})
@@ -89,12 +87,23 @@ $(function(){
 						get_playlist();
 					});
 				});
+				
+				$('.submit').click(function(){
+					var id = $(this).siblings(".song_title").children(".ID").html() - 1;
+					$.ajax({
+				// ------------------------------------------------------------------- Add a song to the playlist || POST /playlist
+						method : 'POST',
+						url : '/Music.html/playlist',
+						data : JSON.stringify({user : window.sessionStorage.name, id : id})
+					});
+				});
 			}
 		});
 	}
 		
 		
 	function get_current_song(){
+		// ------------------------------------------------------------------- Get the current playing song || GET /current
 		$.get('Music.html/current', function(data){
 			var music = JSON.parse(data);
 			if(music.votes === 0){
@@ -148,7 +157,7 @@ $(function(){
 				//console.log("user_music size : " + Object.size(user_music));
 				
 				// The fact that an user can't have more than 3 songs is handled on the client-side. The post request is not even submitted if 3 songs are here.
-				if(Object.size(user_music) < 3){
+				if(Object.size(user_music) < 20){
 					var s = query_results[$(this).children(('.id')).html()];
 					alert(query_results[$(this).children(('.id')).html()].title);
 					var list_id = get_song_place();
@@ -165,12 +174,13 @@ $(function(){
 					
 					song_datas = JSON.stringify(song_datas);
 					//console.log(song_datas);
+					// ------------------------------------------------------------------- Add a song into the catalog || POST /user
 					$.post('/Music.html/user', song_datas, function(){
 						get_playlist();
 						get_user_music();
 					});
 				} else {
-					alert("You already have 3 songs in.");
+					alert("You already have 20 songs in.");
 				}
 					
 			});
@@ -179,9 +189,10 @@ $(function(){
 });
 
 $(window).on('beforeunload', function(){
+	// ------------------------------------------------------------------- Delete an user and all his songs from the catalog || DELETE /catalog
 	$.ajax({
 		method : "DELETE",
-		url : "Music.html/playlist",
+		url : "Music.html/catalog",
 		data : window.sessionStorage.name
 	});
 	delete window.sessionStorage.name;
