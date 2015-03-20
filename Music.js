@@ -73,7 +73,8 @@ $(function(){
 									   "</div><button class='delete'> Remove </button> <button class='submit'> Submit </button></div>"
 									);
 				$('#user_songs').append(song_node);
-				// Code to delete the song
+			}
+			// Code to delete the song
 				$('.delete').click(function(){
 					var id = $(this).siblings(".song_title").children(".ID").html() - 1;
 					$.ajax({
@@ -82,10 +83,9 @@ $(function(){
 						url : '/Music.html/user',
 						data : JSON.stringify({user : window.sessionStorage.name, id : id})
 					})
-					.done(function(){
-						get_user_music();
-						get_playlist();
-					});
+					.done(
+						get_user_music()
+					);
 				});
 				
 				$('.submit').click(function(){
@@ -95,9 +95,11 @@ $(function(){
 						method : 'POST',
 						url : '/Music.html/playlist',
 						data : JSON.stringify({user : window.sessionStorage.name, id : id})
-					});
+					})
+					.done(
+						get_playlist()
+					);
 				});
-			}
 		});
 	}
 		

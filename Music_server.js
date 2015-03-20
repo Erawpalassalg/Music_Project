@@ -25,7 +25,7 @@ Object.size = function(obj) {
 function set_song_timer(){
 	var intervalID = setInterval(function(){
 		if(timer < current.duration-1){
-			console.log("timer : " + timer);
+			//console.log("timer : " + timer);
 			timer++;
 		} else {
 			timer = 0;
@@ -202,9 +202,12 @@ my_http.createServer(function(request, response){
 			});
 		//----------------------------------------------------------------------------------------- POST /playlist ( to add a song from the user's catalog to the playlist)
 		} else if(full_path.substr(full_path.length - 9) === '/playlist' && request.method == 'POST'){
+			console.log("request POST /playlist");
 			request.on('end', function(){
 				var obj = JSON.parse(req_data);
+				console.log("before_push : " + JSON.stringify(playlist));
 				playlist.push(catalog[obj.user][obj.id]);
+				console.log("after_push : " + JSON.stringify(playlist));
 			});
 			response.writeHeader(200);
 			response.end();
@@ -225,6 +228,7 @@ my_http.createServer(function(request, response){
 		//----------------------------------------------------------------------------------------- DELETE /user (to delete a song from an user)
 		} else if(full_path.substr(full_path.length - 5) === '/user' && request.method == 'DELETE'){
 			request.on('end',function(){
+				console.log(JSON.stringify(catalog));
 				console.log("delete : " + req_data);
 				var obj = JSON.parse(req_data);
 				delete catalog[obj["user"]][obj["id"]];
