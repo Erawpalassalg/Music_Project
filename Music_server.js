@@ -5,7 +5,7 @@ url = require("url"),
 filesys = require("fs");
 //mongoose = require('mongoose');
 
-var playlist =[];
+var playlist = {};
 var catalog = {};
 var current = {votes : 0};
 var timer = 0;
@@ -24,7 +24,7 @@ Object.size = function(obj) {
 
 function set_song_timer(){
 	var intervalID = setInterval(function(){
-		if(timer < current.duration-1){
+		if(timer < current.duration-2){
 			//console.log("timer : " + timer);
 			timer++;
 		} else {
@@ -40,17 +40,17 @@ function sort_songs(callback){
 }
 
 function most_wanted_song(){
-	playlist.sort(sort_by_votes);
-	setTimeout(function(){
 		current = {votes : 0};
-		if(Object.size(playlist[0]) > 0){
-			current = playlist[0];
-			set_song_timer();
-			console.log("before " + JSON.stringify(playlist));
-			playlist.shift(); // remove first object of array
-			console.log("after " + JSON.stringify(playlist));
-		}
-	}, 500);
+		if(Object.size(playlist) > 0){
+			console.log("currently in");
+			for(song in playlist){
+				if (playlist[song].votes > current.votes) {
+					current = playlist[song];
+				}
+			}
+			console.log("current : " + JSON.stringify(current));
+			delete playlist[current.id];
+		};
 }
 
 function sort_by_votes(a, b){
@@ -62,6 +62,7 @@ function sort_by_votes(a, b){
 // Make the server ask for the next song every 10 sec, if there is none. And sort the playlist.
 setInterval(function(){
 	if(current.votes === 0){
+		console.log("currently empty");
 		most_wanted_song();
 	}
 }, 10000);
@@ -134,15 +135,15 @@ my_http.createServer(function(request, response){
 			console.log("request POST /playlist");
 			request.on('end', function(){
 				var obj = JSON.parse(req_data);
-				console.log("before_push : " + JSON.stringify(playlist));
-				playlist.push(catalog[obj.user][obj.id]);
-				playlist[playlist.length-1]["global_id"] = obj.global_id;
-				console.log("after_push : " + JSON.stringify(playlist));
+				playlist[obj.id] = catalog[obj.user][obj.id];
+				// We assume that the user who updated the song voted for it
+				playlist[obj.id].votes = 1;
 			});
 			response.writeHeader(200);
 			response.end();
 		//----------------------------------------------------------------------------------------- GET /playlist ( to get the list of songs )
 		} else if(full_path.substr(full_path.length - 9) === '/playlist' && request.method == 'GET'){
+			console.log(JSON.stringify(playlist));
 			response.writeHeader(200);
 			response.write(JSON.stringify(playlist));
 			response.end();
@@ -161,7 +162,7 @@ my_http.createServer(function(request, response){
 				console.log(JSON.stringify(catalog));
 				console.log("delete : " + req_data);
 				var obj = JSON.parse(req_data);
-				delete catalog[obj["user"]][obj["id"]];
+				delete catalog[obj.user][obj.id];
 				console.log(JSON.stringify(catalog));
 			});
 			response.writeHeader(200);
@@ -169,11 +170,12 @@ my_http.createServer(function(request, response){
 		//----------------------------------------------------------------------------------------- GET /user ( to get the songs of an user )	
 		} else if(full_path.substr(full_path.length - 5) === '/user' && request.method == 'GET'){
 			//console.log("query : " + query);
-			response.writeHeader(200);
 			if(Object.size(catalog) === 0 || !catalog[query]){
+				response.writeHeader(404);
 				response.write("Pas d'objet");
-				console.log("playlsit is empty");
+				console.log("playlist is empty");
 			} else {
+				response.writeHeader(200);
 				response.write(JSON.stringify(catalog[query]));
 			}
 			response.end();
@@ -184,7 +186,7 @@ my_http.createServer(function(request, response){
 				var obj = JSON.parse(req_data);
 				//console.log(catalog[obj["username"]]);
 
-				catalog[obj.user][obj.list_id] =  obj;
+				catalog[obj.user][obj.id] =  obj;
 				console.log(JSON.stringify(catalog));
 			});
 			response.writeHeader(200, {"Content-type": "text/plain"});

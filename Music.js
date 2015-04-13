@@ -38,6 +38,7 @@ $(function(){
 		$.get('/Music.html/playlist', function(data){
 			//console.log("playlist : " + data);
 			var playlist = JSON.parse(data);
+			console.log(playlist);
 			for(song in playlist){
 				if(!$.isEmptyObject(playlist[song])){
 					var song_node = $("<div class='playlist_song'><h3>"+playlist[song]["title"] +
@@ -62,17 +63,18 @@ $(function(){
 		});	
 	}
 	
-	setInterval(get_playlist, 30000);
+	setInterval(get_playlist, 10000);
 	
-	// ------------------------------------------------------------------- Get the current songs of the user || GET /user
+	// ------------------------------------------------------------------- Get the songs of the user || GET /user
 	function get_user_music(){
 		$('#user_songs').empty();
 		$.get('Music.html/user', window.sessionStorage.name).done(function(data){
 			user_music = JSON.parse(data);
 			for(song in user_music){
-				var song_node = $("<div class='user_song'><h3 class='song_title'><span class='ID'>" + 
-									(parseInt(song)+1) +
-									 "</span> : " + 
+				console.log(JSON.stringify(user_music[song]));
+				var song_node = $("<div class='user_song' data-id='"+
+									 user_music[song].id +
+									 "'><h3 class='song_title'>" +
 									 user_music[song]["title"]+
 									 "</h3><div>" +
 									 user_music[song]["artist"]+
@@ -84,7 +86,7 @@ $(function(){
 			}
 			// Code to delete the song
 				$('.delete').click(function(){
-					var id = $(this).siblings(".song_title").children(".ID").html() - 1;
+					var id = $(this).parent().attr('data-id');
 					$.ajax({
 				// ------------------------------------------------------------------- Delete a song of the user || DELETE /user
 						method : 'DELETE',
@@ -97,14 +99,13 @@ $(function(){
 				});
 				
 				$('.submit').click(function(){
-					var id = $(this).siblings(".song_title").children(".ID").html() - 1;
-					var global_id = window.sessionStorage.name + new Date().getHours() + new Date().getMinutes() + new Date().getSeconds() + new Date().getMilliseconds();
+					var id = $(this).parent().attr('data-id');
 					$.ajax({
 				// ------------------------------------------------------------------- Add a song to the playlist || POST /playlist
 						method : 'POST',
 						url : '/Music.html/playlist',
-						data : JSON.stringify({user : window.sessionStorage.name, id : id, global_id : global_id}),
-						success : voted[global_id] = true
+						data : JSON.stringify({user : window.sessionStorage.name, id : id}),
+						success : voted[id] = true
 					})
 					.done(
 						get_playlist()
@@ -115,14 +116,14 @@ $(function(){
 		
 		
 	function get_current_song(){
-		// ------------------------------------------------------------------- Get the current playing song || GET /current
+		// ------------------------------------------------------------------- Get the currently playing song || GET /current
 		$.get('Music.html/current', function(data){
 			var music = JSON.parse(data);
 			if(music.votes === 0){
 				current = null;
 			} else {
 				current = music;
-				delete voted[music.global_id];
+				delete voted[music.id];
 			}
 			launch_music(music);
 		});
@@ -172,17 +173,15 @@ $(function(){
 				// The fact that an user can't have more than 20 songs is handled on the client-side. The post request is not even submitted if 20 songs are here.
 				if(Object.size(user_music) < 20){
 					var s = query_results[$(this).children(('.id')).html()];
-					//alert(query_results[$(this).children(('.id')).html()].title);
 					var list_id = get_song_place();
 					var song_datas = {
-							id : s.id,
+							id : window.sessionStorage.name + new Date().getHours() + new Date().getMinutes() + new Date().getSeconds() + new Date().getMilliseconds(),
 							list_id : list_id,
 							user : window.sessionStorage.name,
 							title : s.title,
 							artist : s.artist.name,
 							album : s.album.title,	
-							duration : s.duration,
-							votes : 1
+							duration : s.duration
 					};
 					
 					song_datas = JSON.stringify(song_datas);
