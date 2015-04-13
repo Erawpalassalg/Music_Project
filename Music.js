@@ -1,6 +1,7 @@
 $(function(){
 	
 	var user_music = {};
+	var voted = {};
 	
 	var current = null;
 	
@@ -39,18 +40,25 @@ $(function(){
 			var playlist = JSON.parse(data);
 			for(song in playlist){
 				if(!$.isEmptyObject(playlist[song])){
-					var song_node = $("<div class='playlist_song'><h3>"+playlist[song]["title"]+"</h3><div>"+playlist[song]["artist"]+ " dans l'album : "+ playlist[song]["album"]+ "<span class='votes'> Votes : " + playlist[song].votes + "</span></div></div>");
+					var song_node = $("<div class='playlist_song'><h3>"+playlist[song]["title"] +
+									  "</h3><div>"+playlist[song]["artist"]+ " dans l'album : " + 
+									  playlist[song]["album"] + 
+									  "<span class='votes'> Votes : " + 
+									  playlist[song].votes + 
+									  "</span></div>" + (voted[song.global_id] ? "" : "<button class = 'upvote'> Vote </button>") +  "</div>");
 				}
 				$('#playlist').append(song_node);
-				$('.playlist_song').click(function(data){
-		// ------------------------------------------------------------------- Upvote a song || PUT /playlist
-					$.ajax({
-						method : 'PUT',
-						url : 'Music.html/playlist',
-						data : song
-					});
-				});
 			}
+			$('.upvote').click(function(data){
+		// ------------------------------------------------------------------- Upvote a song || PUT /playlist
+				$.ajax({
+					method : 'PUT',
+					url : 'Music.html/playlist',
+					data : song,
+					success : voted[song.global_id] = true
+				});
+				this.remove();
+			});
 		});	
 	}
 	
@@ -90,11 +98,13 @@ $(function(){
 				
 				$('.submit').click(function(){
 					var id = $(this).siblings(".song_title").children(".ID").html() - 1;
+					var global_id = window.sessionStorage.name + new Date().getHours() + new Date().getMinutes() + new Date().getSeconds() + new Date().getMilliseconds();
 					$.ajax({
 				// ------------------------------------------------------------------- Add a song to the playlist || POST /playlist
 						method : 'POST',
 						url : '/Music.html/playlist',
-						data : JSON.stringify({user : window.sessionStorage.name, id : id})
+						data : JSON.stringify({user : window.sessionStorage.name, id : id, global_id : global_id}),
+						success : voted[global_id] = true
 					})
 					.done(
 						get_playlist()
@@ -112,6 +122,7 @@ $(function(){
 				current = null;
 			} else {
 				current = music;
+				delete voted[music.global_id];
 			}
 			launch_music(music);
 		});
@@ -158,10 +169,10 @@ $(function(){
 				//console.log("user_music " + JSON.stringify(user_music));
 				//console.log("user_music size : " + Object.size(user_music));
 				
-				// The fact that an user can't have more than 3 songs is handled on the client-side. The post request is not even submitted if 3 songs are here.
+				// The fact that an user can't have more than 20 songs is handled on the client-side. The post request is not even submitted if 20 songs are here.
 				if(Object.size(user_music) < 20){
 					var s = query_results[$(this).children(('.id')).html()];
-					alert(query_results[$(this).children(('.id')).html()].title);
+					//alert(query_results[$(this).children(('.id')).html()].title);
 					var list_id = get_song_place();
 					var song_datas = {
 							id : s.id,

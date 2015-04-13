@@ -59,83 +59,12 @@ function sort_by_votes(a, b){
 	return(aVotes-bVotes);
 }
 
-// Make the server ask for the next song every 10 sec, if there is none. Ans sort the playlist.
+// Make the server ask for the next song every 10 sec, if there is none. And sort the playlist.
 setInterval(function(){
 	if(current.votes === 0){
 		most_wanted_song();
 	}
 }, 10000);
-
-/*// ------------------------------------------------------------------- Connection to database
-
-mongoose.connect('mongodb://localhost/test');
-var db = mongoose.connection;
-db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', function(callback){
-	
-	// ----------------------------------- Make the Song Model
-	var songSchema = mongoose.Schema({
-		artist: String,
-		title: String,
-		album: String,
-		picture: String,
-		link: String
-	});
-	var Song = mongoose.model('Song', songSchema);
-	
-	
-	// ----------------------------------- Populate the database
-	Song.find(function(err, results){
-		if(err){return console.log("error: " + err);}
-		// If nothing is found, populate it !
-		if(!results.length){
-			console.log("Nothing found in, populate the DB");
-			// First, iterate to get 20 songs
-			for(var i = 0 ; i < 480; i+=24){
-				var options = {
-					host: 'api.deezer.com',
-					method: 'GET',
-					path: '/track/'+(3135556+i)+'&output=json'
-				};
-				
-				// Get the response
-				my_http.get(options, function(res){
-					var body = '';
-					
-					// As the response comes in chunks, we add them to a string
-					res.on('data', function(data){
-						body += data;
-					});
-					
-					// And, at the end of the reception, we parse the data to JSON
-					res.on('end', function(){
-						var response = JSON.parse(body);
-						// Then we crate the new song
-						var chanson = new Song({
-							artist: response.artist.name,
-							title: response.title,
-							album: response.album.title,
-							picture: response.album.cover,
-							link: response.link
-						});
-						
-						//And save it into the database
-						chanson.save(function(err){
-							if(err) return console.error(err);
-						});
-					});
-				}).on('error', function(e){
-					console.error(e);
-				});
-			}
-		}
-	});
-	
-	// Song.find(function(err, song){
-		// if(err) return console.error(err);
-		// console.log(song);
-	// });
-});*/
 
 // ------------------------------------------------------------------- Creating responses
 my_http.createServer(function(request, response){
@@ -207,6 +136,7 @@ my_http.createServer(function(request, response){
 				var obj = JSON.parse(req_data);
 				console.log("before_push : " + JSON.stringify(playlist));
 				playlist.push(catalog[obj.user][obj.id]);
+				playlist[playlist.length-1]["global_id"] = obj.global_id;
 				console.log("after_push : " + JSON.stringify(playlist));
 			});
 			response.writeHeader(200);
