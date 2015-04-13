@@ -41,22 +41,23 @@ $(function(){
 			console.log(playlist);
 			for(song in playlist){
 				if(!$.isEmptyObject(playlist[song])){
-					var song_node = $("<div class='playlist_song'><h3>"+playlist[song]["title"] +
-									  "</h3><div>"+playlist[song]["artist"]+ " dans l'album : " + 
+					var song_node = $("<div class='playlist_song' data-id='"+ song +"'><h3>"+playlist[song]["title"] +
+									  "</h3><div>"+playlist[song].artist + " dans l'album : " + 
 									  playlist[song]["album"] + 
 									  "<span class='votes'> Votes : " + 
 									  playlist[song].votes + 
-									  "</span></div>" + (voted[song.global_id] ? "" : "<button class = 'upvote'> Vote </button>") +  "</div>");
+									  "</span></div>" + (voted[song] ? "" : "<button class = 'upvote'> Vote </button>") +  "</div>");
 				}
 				$('#playlist').append(song_node);
 			}
 			$('.upvote').click(function(data){
+				var global_id = $(this).parent().attr('data-id');
 		// ------------------------------------------------------------------- Upvote a song || PUT /playlist
 				$.ajax({
 					method : 'PUT',
 					url : 'Music.html/playlist',
-					data : song,
-					success : voted[song.global_id] = true
+					data : global_id,
+					success : voted[global_id] = true
 				});
 				this.remove();
 			});
@@ -73,7 +74,7 @@ $(function(){
 			for(song in user_music){
 				console.log(JSON.stringify(user_music[song]));
 				var song_node = $("<div class='user_song' data-id='"+
-									 user_music[song].id +
+									 user_music[song].global_id +
 									 "'><h3 class='song_title'>" +
 									 user_music[song]["title"]+
 									 "</h3><div>" +
@@ -86,12 +87,12 @@ $(function(){
 			}
 			// Code to delete the song
 				$('.delete').click(function(){
-					var id = $(this).parent().attr('data-id');
+					var global_id = $(this).parent().attr('data-id');
 					$.ajax({
 				// ------------------------------------------------------------------- Delete a song of the user || DELETE /user
 						method : 'DELETE',
 						url : '/Music.html/user',
-						data : JSON.stringify({user : window.sessionStorage.name, id : id})
+						data : JSON.stringify({user : window.sessionStorage.name, global_id : global_id})
 					})
 					.done(
 						get_user_music()
@@ -99,13 +100,13 @@ $(function(){
 				});
 				
 				$('.submit').click(function(){
-					var id = $(this).parent().attr('data-id');
+					var global_id = $(this).parent().attr('data-id');
 					$.ajax({
 				// ------------------------------------------------------------------- Add a song to the playlist || POST /playlist
 						method : 'POST',
 						url : '/Music.html/playlist',
-						data : JSON.stringify({user : window.sessionStorage.name, id : id}),
-						success : voted[id] = true
+						data : JSON.stringify({user : window.sessionStorage.name, global_id : global_id}),
+						success : voted[global_id] = true
 					})
 					.done(
 						get_playlist()
@@ -123,7 +124,7 @@ $(function(){
 				current = null;
 			} else {
 				current = music;
-				delete voted[music.id];
+				delete voted[music.global_id];
 			}
 			launch_music(music);
 		});
@@ -164,7 +165,7 @@ $(function(){
 			for( var r in query_results){
 				var node = $("<div class='song'><span class='id' style='display : none'>" + r + "</span><h3 class='title'>"+ query_results[r].title +"</h3><div class='name'> par <strong>"+ query_results[r].artist.name + "</strong> dans l'album <strong>" + query_results[r].album.title +"</strong></div></div>");
 				$('#search_results').append(node);
-				//console.log("result" + JSON.stringify(query_results[r]));
+				console.log("result" + JSON.stringify(query_results[r]));
 			}
 			$('.song').click(function(){
 				//console.log("user_music " + JSON.stringify(user_music));
@@ -175,7 +176,8 @@ $(function(){
 					var s = query_results[$(this).children(('.id')).html()];
 					var list_id = get_song_place();
 					var song_datas = {
-							id : window.sessionStorage.name + new Date().getHours() + new Date().getMinutes() + new Date().getSeconds() + new Date().getMilliseconds(),
+							id : s.id,
+							global_id : window.sessionStorage.name + new Date().getHours() + new Date().getMinutes() + new Date().getSeconds() + new Date().getMilliseconds(),
 							list_id : list_id,
 							user : window.sessionStorage.name,
 							title : s.title,

@@ -49,7 +49,7 @@ function most_wanted_song(){
 				}
 			}
 			console.log("current : " + JSON.stringify(current));
-			delete playlist[current.id];
+			delete playlist[current.global_id];
 		};
 }
 
@@ -135,9 +135,9 @@ my_http.createServer(function(request, response){
 			console.log("request POST /playlist");
 			request.on('end', function(){
 				var obj = JSON.parse(req_data);
-				playlist[obj.id] = catalog[obj.user][obj.id];
+				playlist[obj.global_id] = catalog[obj.user][obj.global_id];
 				// We assume that the user who updated the song voted for it
-				playlist[obj.id].votes = 1;
+				playlist[obj.global_id].votes = 1;
 			});
 			response.writeHeader(200);
 			response.end();
@@ -162,7 +162,7 @@ my_http.createServer(function(request, response){
 				console.log(JSON.stringify(catalog));
 				console.log("delete : " + req_data);
 				var obj = JSON.parse(req_data);
-				delete catalog[obj.user][obj.id];
+				delete catalog[obj.user][obj.global_id];
 				console.log(JSON.stringify(catalog));
 			});
 			response.writeHeader(200);
@@ -186,7 +186,7 @@ my_http.createServer(function(request, response){
 				var obj = JSON.parse(req_data);
 				//console.log(catalog[obj["username"]]);
 
-				catalog[obj.user][obj.id] =  obj;
+				catalog[obj.user][obj.global_id] =  obj;
 				console.log(JSON.stringify(catalog));
 			});
 			response.writeHeader(200, {"Content-type": "text/plain"});
@@ -198,7 +198,7 @@ my_http.createServer(function(request, response){
 				response.writeHeader(404);
 			} else {
 				response.writeHeader(200);
-				current['time'] = timer;
+				current.time = timer;
 				response.write(JSON.stringify(current));
 			}
 			response.end();
