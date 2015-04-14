@@ -48,6 +48,7 @@ $(function(){
 									  playlist[song].votes + 
 									  "</span></div>" + (voted[song] ? "" : "<button class = 'upvote'> Vote </button>") +  "</div>");
 				}
+				console.log("button vote : " + voted[song]);
 				$('#playlist').append(song_node);
 			}
 			$('.upvote').click(function(data){
@@ -196,7 +197,6 @@ $(function(){
 				} else {
 					alert("You already have 20 songs in.");
 				}
-					
 			});
 		});
 	});

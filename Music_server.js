@@ -35,28 +35,18 @@ function set_song_timer(){
 	}, 1000);
 }
 
-function sort_songs(callback){
-	
-}
-
 function most_wanted_song(){
 		current = {votes : 0};
 		if(Object.size(playlist) > 0){
-			console.log("currently in");
 			for(song in playlist){
 				if (playlist[song].votes > current.votes) {
 					current = playlist[song];
 				}
 			}
-			console.log("current : " + JSON.stringify(current));
+			//console.log("current : " + JSON.stringify(current));
+			set_song_timer();
 			delete playlist[current.global_id];
 		};
-}
-
-function sort_by_votes(a, b){
-	var aVotes = a.votes;
-	var bVotes = b.votes;
-	return(aVotes-bVotes);
 }
 
 // Make the server ask for the next song every 10 sec, if there is none. And sort the playlist.
@@ -143,17 +133,15 @@ my_http.createServer(function(request, response){
 			response.end();
 		//----------------------------------------------------------------------------------------- GET /playlist ( to get the list of songs )
 		} else if(full_path.substr(full_path.length - 9) === '/playlist' && request.method == 'GET'){
-			console.log(JSON.stringify(playlist));
+			//console.log(JSON.stringify(playlist));
 			response.writeHeader(200);
 			response.write(JSON.stringify(playlist));
 			response.end();
 		//----------------------------------------------------------------------------------------- PUT /playlist (to update votes on a song)
 		} else if(full_path.substr(full_path.length - 9) === '/playlist' && request.method == 'PUT'){
 			request.on('end', function(){
-				var v = playlist[req_data].votes++;
-				console.log("votes : " + v);
+				playlist[req_data].votes++;
 				response.writeHeader(200);
-				//response.write(JSON.stringify({votes : v}));
 				response.end();
 			});
 		//----------------------------------------------------------------------------------------- DELETE /user (to delete a song from an user)
