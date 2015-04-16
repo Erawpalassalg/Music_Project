@@ -1,4 +1,38 @@
 $(function(){
+
+	apparenceMusic = function(){
+		$("tr").mouseover(function(e){
+			if( !$(this).parent().is("thead") ){
+				$(this).addClass("orange");
+			}
+		});
+		$("tr").mouseout(function(){
+			$(this).removeClass("orange");
+		});
+	}
+
+	progress = function(music){
+		$("#progress-bar").css("width", music.time/music.duration*100 + "%");
+		setInterval(function(){
+			var width = $("#progress-bar").width();
+			var parentWidth = $("#progress-bar").offsetParent().width();
+			var percent = 100*width/parentWidth;
+			var newPercent = percent + 0.5/total*100;
+			$("#progress-bar").css("width", newPercent + "%");
+		}, 500);
+	}
+//--- a revoir pour le son!
+    plus = function(){
+        $("#volPlus").css(50);
+
+    }
+
+    moins = function(){
+        $("#volMoins").css(50);
+
+    }
+
+	apparenceMusic();
 	
 	var user_music = {};
 	var voted = {};
@@ -39,20 +73,23 @@ $(function(){
 			//console.log("playlist : " + data);
 			var playlist = JSON.parse(data);
 			console.log(playlist);
-			for(song in playlist){
-				if(!$.isEmptyObject(playlist[song])){
-					var song_node = $("<div class='playlist_song' data-id='"+ song +"'><h3>"+playlist[song]["title"] +
-									  "</h3><div>"+playlist[song].artist + " dans l'album : " + 
-									  playlist[song]["album"] + 
-									  "<span class='votes'> Votes : " + 
-									  playlist[song].votes + 
-									  "</span></div>" + (voted[song] ? "" : "<button class = 'upvote'> Vote </button>") +  "</div>");
-				}
-				console.log("button vote : " + voted[song]);
-				$('#playlist').append(song_node);
-			}
+            var list = "<table class='table table-striped table-bordered'><thead><tr><th>#</th><th>Titre</th><th>Auteur</th><th>Album</th><th>J/'aime</th><th>J/'aime?</th></tr></thead><tbody>";
+            for(song in playlist) {
+                if(!$.isEmptyObject(playlist[song])){
+                    var song_node = "<tr><td>"+ playlist[song]["title"] + "</td><td>" + playlist[song]["artist"] + "</td><td>" + playlist[song]["album"] + "</td><td>" + "<span class='votes'>"+ playlist[song].votes + "</span></td>" + (voted[song] ? "" : ("<td data-id='"+ song +"'> <button class = 'upvote'> Vote </button>" + "</td>")) + "</tr>";
+                    list += song_node;
+                    if (song == playlist.length - 1) {
+                        list += "</tbody></table>";
+                        $('#user_music').html(list);
+                    }}
+                    console.log("button vote : " + voted[song]);
+                    $('#playlist').append(song_node);
+                }
+             // pour refaire le binding
+            apparenceMusic();
 			$('.upvote').click(function(data){
 				var global_id = $(this).parent().attr('data-id');
+				console.log("global_id" + global_id);
 		// ------------------------------------------------------------------- Upvote a song || PUT /playlist
 				$.ajax({
 					method : 'PUT',
@@ -67,25 +104,25 @@ $(function(){
 	
 	setInterval(get_playlist, 10000);
 	
-	// ------------------------------------------------------------------- Get the songs of the user || GET /user
+	// ------------------------------------------------------------------- Get the songs of the user || GET /user playlist
 	function get_user_music(){
 		$('#user_songs').empty();
 		$.get('Music.html/user', window.sessionStorage.name).done(function(data){
 			user_music = JSON.parse(data);
-			for(song in user_music){
-				console.log(JSON.stringify(user_music[song]));
-				var song_node = $("<div class='user_song' data-id='"+
-									 user_music[song].global_id +
-									 "'><h3 class='song_title'>" +
-									 user_music[song]["title"]+
-									 "</h3><div>" +
-									 user_music[song]["artist"]+
-									  " dans l'album : " +
-									   user_music[song]["album"] +
-									   "</div><button class='delete'> Remove </button> <button class='submit'> Submit </button></div>"
-									);
-				$('#user_songs').append(song_node);
-			}
+            var list = "<table class='table table-striped table-bordered'><thead><tr><th>#</th><th>Titre</th><th>Auteur</th><th>Album</th><th>Soumettre/Enlever</th></tr></thead><tbody>";
+            for(song in user_music) {
+                console.log(JSON.stringify(user_music[song]));
+                var song_node = "<tr><td class='song_title'>" + user_music[song]["title"] + "</td><td>" + user_music[song]["artist"] + "</td><td>" + user_music[song]["album"] + "</td><td>" + "<span data-id='"+ song + "'><button class='delete'> Remove </button> <button class='submit'> Submit </button></span>" + "</td></tr>";
+                list += song_node;
+                if (song == user_music.length - 1) {
+                    list += "</tbody></table>";
+                    $('#user_music').html(list);
+
+                }
+                $('#user_songs').append(song_node);
+            }
+                // pour refaire le binding
+                apparenceMusic();
 			// Code to delete the song
 				$('.delete').click(function(){
 					var global_id = $(this).parent().attr('data-id');
@@ -128,6 +165,7 @@ $(function(){
 				delete voted[music.global_id];
 			}
 			launch_music(music);
+            progress(music);
 		});
 	}
 	
@@ -162,19 +200,26 @@ $(function(){
 	$("#search").keyup(function(){
 		DZ.api('/search?q='+$(this).val()+'&index=0&limit=4&output=json', function(response){
 			$('#search_results').empty();
+			var list = "<table class='table table-striped table-bordered'><thead><tr><th>#</th><th>Titre</th><th>Auteur</th><th>Album</th></tr></thead><tbody>";
 			query_results = response.data;
 			for( var r in query_results){
-				var node = $("<div class='song'><span class='id' style='display : none'>" + r + "</span><h3 class='title'>"+ query_results[r].title +"</h3><div class='name'> par <strong>"+ query_results[r].artist.name + "</strong> dans l'album <strong>" + query_results[r].album.title +"</strong></div></div>");
-				$('#search_results').append(node);
-				console.log("result" + JSON.stringify(query_results[r]));
+				console.log(query_results[r]);
+				var node = "<tr class='song'><td class='id'>"+(1+parseInt(r))+"</td><td>"+query_results[r].title+"</td><td>"+query_results[r].artist.name+"</td><td>"+query_results[r].album.title+"</td></tr>";
+				list+= node;
+
+				if (r == query_results.length-1) {
+					list += "</tbody></table>";
+					$('#search_results').html(list);
+				};
+
+					// pour refaire le binding
+					apparenceMusic();
 			}
+
 			$('.song').click(function(){
-				//console.log("user_music " + JSON.stringify(user_music));
-				//console.log("user_music size : " + Object.size(user_music));
-				
 				// The fact that an user can't have more than 20 songs is handled on the client-side. The post request is not even submitted if 20 songs are here.
 				if(Object.size(user_music) < 20){
-					var s = query_results[$(this).children(('.id')).html()];
+					var s = query_results[$(this).children('.id').html()-1];
 					var list_id = get_song_place();
 					var song_datas = {
 							id : s.id,

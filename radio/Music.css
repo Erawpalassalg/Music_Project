@@ -1,0 +1,44 @@
+html{
+    min-height: 100%;
+}
+body {
+    min-height: 100%;
+    background: url(fondLecteur.jpg) no-repeat top left fixed #e8eae7; 
+    background-size: auto 100%;
+}
+.container{
+    width: 1450px;
+}
+#top{
+    font-size: 100px;
+    font-weight: bold;
+    color: #6e543f ;
+    margin: 0px 0px 0px 50px;
+    text-align: right;
+    line-height: 150px;
+}
+
+#name{
+    width: auto;
+    display: inline-block;
+}
+#login{
+    display: block;
+}
+#send_name{
+    padding: 6px 45px;
+}
+.orange{
+    color: orange;
+    cursor : pointer;
+}
+label{
+    font-size: 25px;
+}
+.btn-player{
+    width: 60px;
+}
+
+.div-lecture{
+    padding-bottom: 40px;
+}

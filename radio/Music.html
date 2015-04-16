@@ -1,25 +1,28 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>
-			RadioManu, 100% tubes !
-		</title>
-		<meta charset="UTF-8"/>
-        <link rel="stylesheet" href="Music.css" />
+		<title>Radio Manu 100% hit!</title>
+		<meta http-equiv="content-type" content="text/css" charset="UTF-8"/>
+        <link rel="stylesheet" href="Music.css" type="text/css" media="screen" />
 		<script src="jQuery.js"></script>
 		<script type="text/javascript" src="Music.js"></script>
 	</head>
 	<body>
 
-		<div id="name_wrapper">
-			<h1>Name</h1>
-			<form>
-				<input type="text" id="name"/>
-			</form>
-			<button id='send_name'>Send name</button>
-		</div>
-        <div id='player'></div>
-		    <h1>Search</h1>
+    <div id="top">Radio Manu 100% hit</div>
+
+    <div id="conteneur">
+        <div id=name_wrapper>
+            Login
+             <form>
+                 <input type="text" id="name"/>
+             </form>
+             <button id='send_name'>Autentification</button>
+        </div>
+</br>
+
+
+        <h1>Search</h1>
 		    <form>
 			    <input type="search" id="search"/>
 		    </form>
@@ -29,8 +32,10 @@
         <h1>Playlist</h1>
 		<div id="playlist"></div>
 		
-		<h1>Submitted songs</h1>
+		<h1>Your catalog</h1>
 		<div id="user_songs"></div>
+
+        <div id='player'></div>
 		
 		<div id="dz-root">
 		<script src="http://cdn-files.deezer.com/js/min/dz.js"></script>
@@ -50,6 +55,6 @@
 				}
 			});
 		</script>
-        </div>
+        </div></div>
 	</body>
 </html>
